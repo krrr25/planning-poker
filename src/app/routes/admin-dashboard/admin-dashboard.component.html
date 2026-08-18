@@ -1,0 +1,63 @@
+<main class="mx-auto min-h-screen max-w-5xl px-6 py-8">
+  <header class="mb-10 flex items-center justify-between">
+    <div>
+      <p class="text-sm text-gold">Signed in as {{ auth.admin()?.name }}</p>
+      <h1 class="font-display text-4xl">Rooms</h1>
+    </div>
+    <div class="flex gap-3">
+      <a routerLink="/" class="btn btn-ghost">Home</a>
+      <button class="btn btn-ghost" type="button" (click)="auth.logout()">Sign out</button>
+    </div>
+  </header>
+
+  <section class="rise-in mb-10 rounded-3xl border border-white/10 bg-panel p-6">
+    <h2 class="font-display text-2xl">Create a room</h2>
+    <p class="mt-1 text-sm text-mist/70">Name it for the pod. The link lasts 3 hours.</p>
+    <form class="mt-5 flex flex-col gap-3 sm:flex-row" (ngSubmit)="create()">
+      <input
+        class="field flex-1"
+        name="name"
+        [(ngModel)]="name"
+        placeholder="Sprint 24 - Product team"
+        required
+      />
+      <button class="btn btn-gold" type="submit" [disabled]="creating()">Create room</button>
+    </form>
+    @if (created()) {
+      <div class="mt-5 rounded-2xl border border-gold/30 bg-gold/10 p-4">
+        <p class="text-sm text-mist">Share this link with the team</p>
+        <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+          <input class="field" [value]="createdUrl()" readonly />
+          <button class="btn btn-ghost" type="button" (click)="copy(createdUrl())">
+            {{ copied() ? 'Copied' : 'Copy link' }}
+          </button>
+          <a class="btn btn-gold" [routerLink]="['/room', created()!.code]">Open room</a>
+        </div>
+      </div>
+    }
+  </section>
+
+  <section>
+    <h2 class="mb-4 font-display text-2xl">Your live rooms</h2>
+    @if (!rooms().length) {
+      <p class="text-mist/70">No active rooms. Create one to start planning.</p>
+    }
+    <div class="grid gap-4 md:grid-cols-2">
+      @for (room of rooms(); track room.code) {
+        <article class="rounded-2xl border border-white/10 bg-panel p-5">
+          <h3 class="text-lg font-semibold">{{ room.name }}</h3>
+          <p class="mt-1 text-sm text-mist/70">
+            Code {{ room.code }} · expires {{ room.expiresAt | date: 'short' }}
+          </p>
+          <p class="mt-1 text-sm text-mist">{{ room.participantCount }} in room · {{ room.status }}</p>
+          <div class="mt-4 flex gap-2">
+            <a class="btn btn-gold" [routerLink]="['/room', room.code]">Start / open</a>
+            <button class="btn btn-ghost" type="button" (click)="copy(origin + '/room/' + room.code)">
+              Copy link
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+</main>

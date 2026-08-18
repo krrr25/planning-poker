@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --color-ink: #071018;
+  --color-panel: #121a26;
+  --color-line: #243044;
+  --color-gold: #f5c14a;
+  --color-gold-ink: #3b2a08;
+  --color-mist: #c7d0de;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: #e8eef7;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(245, 193, 74, 0.12), transparent 50%),
+    radial-gradient(900px 500px at 100% 0%, rgba(80, 140, 255, 0.1), transparent 45%),
+    #071018;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.45s ease both;
+}
+
+.field {
+  @apply w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition;
+}
+
+.field:focus {
+  border-color: #f5c14a;
+  box-shadow: 0 0 0 3px rgba(245, 193, 74, 0.18);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition;
+}
+
+.btn-gold {
+  background: #f5c14a;
+  color: #3b2a08;
+}
+
+.btn-gold:hover {
+  filter: brightness(1.05);
+}
+
+.btn-ghost {
+  @apply border border-white/15 bg-white/5 text-white;
+}
+
+.btn-ghost:hover {
+  @apply bg-white/10;
+}

@@ -1,0 +1,28 @@
+<div class="text-center">
+  <div
+    class="table-card mx-auto"
+    [class.is-revealed]="status() === 'revealed'"
+    [class.pending-pulse]="status() === 'voting' && !participant().hasVoted"
+    [style.animation-delay.ms]="delayMs()"
+  >
+    <div class="table-card-inner">
+      <div class="poker-back"></div>
+      <div class="poker-face">{{ participant().vote || '–' }}</div>
+    </div>
+  </div>
+  <p class="mt-2 text-sm font-medium">
+    {{ participant().name }}
+    @if (participant().isHost) {
+      <span class="text-gold"> · host</span>
+    }
+  </p>
+  <p class="text-xs text-mist/60">
+    @if (status() === 'revealed') {
+      {{ participant().vote ?? '—' }}
+    } @else if (participant().hasVoted) {
+      Voted
+    } @else {
+      Yet to vote
+    }
+  </p>
+</div>

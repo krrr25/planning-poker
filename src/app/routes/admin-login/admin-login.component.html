@@ -1,0 +1,24 @@
+<main class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+  <a routerLink="/" class="mb-8 text-sm text-mist/70 hover:text-white">← Back</a>
+  <div class="rise-in rounded-3xl border border-white/10 bg-panel p-8">
+    <p class="text-sm uppercase tracking-[0.18em] text-gold">Facilitator</p>
+    <h1 class="font-display mt-2 text-4xl">Admin sign in</h1>
+    <p class="mt-2 text-sm text-mist/70">BA, PO, or SM accounts only. Voters use the room link.</p>
+    <form class="mt-8 space-y-4" (ngSubmit)="submit()">
+      <div>
+        <label class="mb-2 block text-sm">Email</label>
+        <input class="field" type="email" name="email" [(ngModel)]="email" required />
+      </div>
+      <div>
+        <label class="mb-2 block text-sm">Password</label>
+        <input class="field" type="password" name="password" [(ngModel)]="password" required />
+      </div>
+      <button class="btn btn-gold w-full" type="submit" [disabled]="busy()">
+        {{ busy() ? 'Signing in…' : 'Enter dashboard' }}
+      </button>
+      @if (error()) {
+        <p class="text-sm text-red-300">{{ error() }}</p>
+      }
+    </form>
+  </div>
+</main>

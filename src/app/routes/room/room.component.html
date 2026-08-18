@@ -1,0 +1,106 @@
+<main class="mx-auto min-h-screen max-w-6xl px-4 py-6">
+  @if (expired()) {
+    <section class="mx-auto mt-24 max-w-lg rounded-3xl border border-white/10 bg-panel p-8 text-center">
+      <h1 class="font-display text-3xl">Room expired</h1>
+      <p class="mt-3 text-mist/80">Ask the facilitator for a new link.</p>
+      <a routerLink="/" class="btn btn-gold mt-6">Go home</a>
+    </section>
+  } @else if (room(); as current) {
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.18em] text-gold">Planning room</p>
+        <h1 class="font-display text-3xl md:text-4xl">{{ current.name }}</h1>
+        <p class="mt-1 text-sm text-mist/70">
+          Hosted by {{ current.createdByName }} · expires {{ current.expiresAt | date: 'shortTime' }}
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-ghost" type="button" (click)="copyLink()">
+          {{ copied() ? 'Copied' : 'Copy link' }}
+        </button>
+        @if (isAdmin()) {
+          <button class="btn btn-ghost" type="button" (click)="rooms.extend(code)">+1 hour</button>
+          @if (current.status === 'waiting') {
+            <button class="btn btn-gold" type="button" (click)="start()">Start voting</button>
+          }
+          @if (current.status === 'voting') {
+            <button class="btn btn-gold" type="button" (click)="reveal()">Reveal</button>
+          }
+          @if (current.status === 'revealed') {
+            <button class="btn btn-gold" type="button" (click)="reset()">Next / reset</button>
+          }
+        }
+      </div>
+    </header>
+
+    <section class="mb-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+      @switch (current.status) {
+        @case ('waiting') {
+          <span class="text-gold">Waiting for the facilitator to start voting.</span>
+          Cards stay locked until then.
+        }
+        @case ('voting') {
+          <span class="text-gold">{{ current.votedCount }}/{{ current.participantCount }} voted.</span>
+          @if (pending().length) {
+            Still waiting on
+            <strong>{{ pendingNames() }}</strong>
+          }
+        }
+        @case ('revealed') {
+          Votes are in
+          @if (current.average !== null) {
+            · average <strong>{{ current.average }}</strong>
+          }
+        }
+      }
+    </section>
+
+    <section class="min-h-[280px] rounded-[2rem] border border-white/10 bg-panel/80 p-6">
+      <p class="mb-4 text-center text-xs uppercase tracking-[0.2em] text-mist/60">The table</p>
+      <div class="flex flex-wrap justify-center gap-6">
+        @for (person of current.participants; track person.id; let i = $index) {
+          <app-table-card [participant]="person" [status]="current.status" [delayMs]="i * 90" />
+        } @empty {
+          <p class="text-mist/60">Waiting for people to join…</p>
+        }
+      </div>
+    </section>
+
+    <section class="mt-8">
+      <p class="mb-3 text-center text-sm text-mist/70">
+        @if (current.status !== 'voting') {
+          Cards are disabled until voting starts
+        } @else {
+          Pick your estimate — you can change it until reveal
+        }
+      </p>
+      <div class="flex flex-wrap justify-center gap-3">
+        @for (card of current.deck; track card) {
+          <app-poker-card
+            [value]="card"
+            [selected]="myVote() === card && current.status === 'voting'"
+            [revealed]="current.status === 'revealed' && myVote() === card"
+            [reset]="resetting() && current.status === 'waiting'"
+            [disabled]="current.status !== 'voting' || !joined()"
+            (pick)="vote($event)"
+          />
+        }
+      </div>
+    </section>
+  }
+
+  @if (showJoin()) {
+    <div class="fixed inset-0 z-20 grid place-items-center bg-black/55 p-4 backdrop-blur-sm">
+      <form class="rise-in w-full max-w-md rounded-3xl border border-white/10 bg-ink p-7" (ngSubmit)="join()">
+        <p class="text-xs uppercase tracking-[0.18em] text-gold">Join room</p>
+        <h2 class="font-display mt-2 text-3xl">{{ room()?.name || 'Planning Poker' }}</h2>
+        <p class="mt-2 text-sm text-mist/70">Enter the name your team will see on the board.</p>
+        <input class="field mt-5" name="userName" [(ngModel)]="userName" placeholder="Your name" required />
+        <button class="btn btn-gold mt-4 w-full" type="submit">Join the table</button>
+        @if (joinError()) {
+          <p class="mt-3 text-sm text-red-300">{{ joinError() }}</p>
+        }
+      </form>
+    </div>
+  }
+</main>

@@ -1,0 +1,15 @@
+<button
+  type="button"
+  class="poker-card"
+  [class.is-selected]="selected()"
+  [class.is-revealed]="revealed()"
+  [class.is-reset]="reset()"
+  [class.is-disabled]="disabled()"
+  [disabled]="disabled()"
+  (click)="onPick()"
+>
+  <div class="poker-card-inner">
+    <div class="poker-back"></div>
+    <div class="poker-face">{{ value() }}</div>
+  </div>
+</button>

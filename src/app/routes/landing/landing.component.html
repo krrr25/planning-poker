@@ -1,0 +1,31 @@
+<main class="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-8">
+  <header class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="grid h-10 w-10 place-items-center rounded-xl bg-gold text-lg text-gold-ink">♠</div>
+      <div>
+        <p class="font-display text-xl">Planning Poker</p>
+        <p class="text-xs text-mist/70">Internal sprint estimation</p>
+      </div>
+    </div>
+    <a routerLink="/admin" class="btn btn-ghost">Facilitator sign in</a>
+  </header>
+
+  <section class="mt-20 grid items-center gap-12 md:grid-cols-2">
+    <div class="rise-in">
+      <p class="mb-3 text-sm uppercase tracking-[0.2em] text-gold">Join the room</p>
+      <h1 class="font-display text-5xl leading-tight">Estimate together.<br />Keep it simple.</h1>
+      <p class="mt-4 max-w-md text-mist/80">
+        Your facilitator shares a room link. Enter the code and your name — cards unlock when voting starts.
+      </p>
+    </div>
+
+    <form class="rise-in rounded-3xl border border-white/10 bg-panel/80 p-6 shadow-2xl" (ngSubmit)="go()">
+      <label class="mb-2 block text-sm text-mist">Room code</label>
+      <input class="field mb-4" [(ngModel)]="code" name="code" placeholder="k7m2xq" required />
+      <button class="btn btn-gold w-full" type="submit">Open room</button>
+      @if (error()) {
+        <p class="mt-3 text-sm text-red-300">{{ error() }}</p>
+      }
+    </form>
+  </section>
+</main>
