@@ -1,4 +1,15 @@
-export const DECK = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
+export const DECK = ['7', '14', '21', '28', '35', '42', '49'];
+
+function asPublicSeat(p) {
+  const seat = p && typeof p.toObject === 'function' ? p.toObject() : p;
+  return {
+    id: seat.id,
+    name: seat.name,
+    isHost: !!seat.isHost,
+    hasVoted: !!seat.hasVoted,
+    vote: seat.vote ?? null,
+  };
+}
 
 export function isExpired(room) {
   return room.status === 'ended' || new Date(room.expiresAt).getTime() <= Date.now();
@@ -6,7 +17,7 @@ export function isExpired(room) {
 
 export function toPublicRoom(room, viewer = {}) {
   const revealed = room.status === 'revealed';
-  const voters = room.participants.filter((p) => !p.isHost);
+  const voters = room.participants.map(asPublicSeat).filter((p) => !p.isHost);
   const votes = voters.filter((p) => p.hasVoted).map((p) => p.vote);
   const numeric = votes.map(Number).filter((n) => !Number.isNaN(n));
   const average =
@@ -25,12 +36,14 @@ export function toPublicRoom(room, viewer = {}) {
     votedCount: voters.filter((p) => p.hasVoted).length,
     participantCount: voters.length,
     average,
-    participants: voters.map((p) => ({
-      id: p.id,
-      name: p.name,
-      isHost: p.isHost,
-      hasVoted: p.hasVoted,
-      vote: revealed || p.id === viewer.participantId ? p.vote : null,
-    })),
+    participants: [...voters]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        isHost: p.isHost,
+        hasVoted: p.hasVoted,
+        vote: revealed || p.id === viewer.participantId ? p.vote : null,
+      })),
   };
 }

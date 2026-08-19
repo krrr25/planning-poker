@@ -1,4 +1,4 @@
-<div class="flex min-h-screen flex-col">
+<div class="flex min-h-dvh flex-col">
   @if (auth.admin(); as admin) {
     <header class="sticky top-0 z-30 shrink-0 border-b border-white/10 bg-ink/95 backdrop-blur">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
@@ -8,15 +8,15 @@
         <div class="flex items-center gap-3">
           <a routerLink="/admin/rooms" class="btn btn-ghost">My rooms</a>
           <p class="hidden text-sm text-mist sm:block">
-            <span class="text-gold">Facilitator</span>
-            · {{ admin.name }}
+            <span class="text-gold">{{ admin.name }}</span>
+            · Facilitator
           </p>
           <button
             class="icon-btn"
             type="button"
             title="Log out"
             aria-label="Log out"
-            (click)="auth.logout()"
+            (click)="logout()"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +38,7 @@
       </div>
     </header>
   }
-  <div class="flex-1">
+  <div class="flex min-h-0 flex-1 flex-col">
     <router-outlet />
   </div>
   <app-confirm-dialog />

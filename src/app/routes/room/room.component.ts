@@ -7,6 +7,7 @@ import { TableCardComponent } from '../../components/table-card/table-card.compo
 import { AuthService } from '../../services/auth.service';
 import { ConfirmService } from '../../services/confirm.service';
 import { RoomService } from '../../services/room.service';
+import { formatEstimate } from '../../utils/estimate';
 
 @Component({
   selector: 'app-room',
@@ -32,14 +33,30 @@ export class RoomComponent implements OnDestroy {
   readonly showJoin = computed(
     () => !!this.room() && !this.joined() && !this.expired() && !this.isAdmin()
   );
+  readonly myParticipantId = computed(() => this.participantId());
+  readonly myName = computed(() => {
+    const id = this.participantId();
+    if (this.isAdmin()) {
+      return this.auth.admin()?.name ?? this.room()?.createdByName ?? null;
+    }
+    return this.room()?.participants.find((p) => p.id === id)?.name ?? this.sessionName();
+  });
   readonly myVote = computed(() => {
     const id = this.participantId();
     return this.room()?.participants.find((p) => p.id === id)?.vote ?? null;
   });
+  readonly myVoteLabel = computed(() => formatEstimate(this.myVote()));
+  readonly averageLabel = computed(() => formatEstimate(this.room()?.average));
   readonly pending = computed(() => this.room()?.participants.filter((p) => !p.hasVoted) ?? []);
+  readonly seats = computed(() =>
+    [...(this.room()?.participants ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    )
+  );
 
   private poll?: ReturnType<typeof setInterval>;
   private participantId = signal<string | null>(null);
+  private sessionName = signal<string | null>(null);
 
   constructor() {
     void this.boot();
@@ -65,7 +82,9 @@ export class RoomComponent implements OnDestroy {
     } else if (this.rooms.hasSession(this.code)) {
       const raw = localStorage.getItem(this.rooms.sessionKey(this.code));
       if (raw) {
-        this.participantId.set((JSON.parse(raw) as { participantId: string }).participantId);
+        const session = JSON.parse(raw) as { participantId: string; name?: string };
+        this.participantId.set(session.participantId);
+        this.sessionName.set(session.name || null);
       }
       this.joined.set(true);
     }
@@ -80,6 +99,7 @@ export class RoomComponent implements OnDestroy {
     try {
       const result = await this.rooms.join(this.code, this.userName.trim());
       this.participantId.set(result.participantId);
+      this.sessionName.set(result.name);
       this.joined.set(true);
     } catch (err: unknown) {
       const message = (err as { error?: { message?: string } })?.error?.message;
@@ -126,6 +146,43 @@ export class RoomComponent implements OnDestroy {
     await navigator.clipboard.writeText(`${location.origin}/room/${this.code}`);
     this.copied.set(true);
     setTimeout(() => this.copied.set(false), 1400);
+  }
+
+  async leave(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Leave the table?',
+      message:
+        'You will be removed from this room. The facilitator will no longer see you waiting to vote.',
+      confirmLabel: 'Leave table',
+      cancelLabel: 'Stay',
+      danger: true,
+    });
+    if (!ok) {
+      return;
+    }
+    if (this.poll) {
+      clearInterval(this.poll);
+      this.poll = undefined;
+    }
+    await this.rooms.leave(this.code);
+    this.joined.set(false);
+    this.participantId.set(null);
+    this.sessionName.set(null);
+    await this.router.navigateByUrl('/');
+  }
+
+  async kick(person: { id: string; name: string }): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: `Remove ${person.name}?`,
+      message: 'They will leave the table and will not count as waiting to vote.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep',
+      danger: true,
+    });
+    if (!ok) {
+      return;
+    }
+    await this.rooms.removeSeat(this.code, person);
   }
 
   async endRoom(): Promise<void> {

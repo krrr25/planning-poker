@@ -22,6 +22,10 @@ export class RoomService {
     return !!localStorage.getItem(this.sessionKey(code));
   }
 
+  clearSession(code: string): void {
+    localStorage.removeItem(this.sessionKey(code));
+  }
+
   async listMine(): Promise<RoomState[]> {
     return firstValueFrom(this.http.get<RoomState[]>('/api/rooms'));
   }
@@ -31,7 +35,11 @@ export class RoomService {
   }
 
   async get(code: string): Promise<RoomState> {
-    const room = await firstValueFrom(this.http.get<RoomState>(`/api/rooms/${code}`));
+    const room = await firstValueFrom(
+      this.http.get<RoomState>(`/api/rooms/${code}`, {
+        params: { _: String(Date.now()) },
+      })
+    );
     this.room.set(room);
     this.error.set('');
     return room;
@@ -52,6 +60,35 @@ export class RoomService {
 
   async start(code: string): Promise<void> {
     this.room.set(await firstValueFrom(this.http.post<RoomState>(`/api/rooms/${code}/start`, {})));
+  }
+
+  async removeSeat(code: string, person: { id?: string; name?: string }): Promise<void> {
+    const result = await firstValueFrom(
+      this.http.post<{ room: RoomState }>(`/api/rooms/${code}/remove`, {
+        participantId: person.id,
+        name: person.name,
+      })
+    );
+    this.room.set(result.room);
+  }
+
+  async leave(code: string): Promise<void> {
+    const raw = localStorage.getItem(this.sessionKey(code));
+    const session = raw
+      ? (JSON.parse(raw) as { participantId?: string; name?: string })
+      : {};
+    try {
+      await firstValueFrom(
+        this.http.post(`/api/rooms/${code}/leave`, {
+          participantId: session.participantId,
+          name: session.name,
+        })
+      );
+    } catch {
+      // Still clear the local seat if the network call fails.
+    }
+    this.clearSession(code);
+    this.room.set(null);
   }
 
   async vote(code: string, value: string): Promise<void> {

@@ -9,7 +9,7 @@ const participantSchema = new mongoose.Schema(
     vote: { type: String, default: null },
     hasVoted: { type: Boolean, default: false },
   },
-  { _id: false }
+  { _id: false, id: false }
 );
 
 const roomSchema = new mongoose.Schema(

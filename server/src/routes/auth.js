@@ -29,11 +29,22 @@ authRouter.post('/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-authRouter.get('/me', (req, res) => {
-  const admin = readAdmin(req);
+authRouter.get('/me', async (req, res) => {
+  const session = readAdmin(req);
+  if (!session) {
+    res.status(401).json({ message: 'Not signed in' });
+    return;
+  }
+
+  const admin = await Admin.findById(session.sub).select('email name role');
   if (!admin) {
     res.status(401).json({ message: 'Not signed in' });
     return;
   }
-  res.json({ email: admin.email, name: admin.name, role: admin.role });
+
+  res.json({
+    email: admin.email,
+    name: admin.name,
+    role: admin.role,
+  });
 });

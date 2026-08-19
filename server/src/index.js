@@ -14,6 +14,10 @@ const app = express();
 app.use(cors({ origin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

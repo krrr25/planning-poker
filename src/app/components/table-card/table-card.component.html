@@ -1,4 +1,4 @@
-<div class="text-center">
+<div class="text-center" [class.is-self]="isSelf()">
   <div
     class="table-card mx-auto"
     [class.is-revealed]="status() === 'revealed'"
@@ -7,11 +7,29 @@
   >
     <div class="table-card-inner">
       <div class="poker-back"></div>
-      <div class="poker-face">{{ participant().vote || '–' }}</div>
+      <div class="poker-face">
+        @if (estimate(); as est) {
+          <span class="face-hours">{{ est.hoursLabel }}</span>
+          @if (est.daysLabel) {
+            <span class="face-days">{{ est.daysLabel }}</span>
+          }
+        } @else {
+          –
+        }
+      </div>
     </div>
   </div>
-  <p class="mt-2 text-sm font-medium">{{ participant().name }}</p>
-  <p class="text-xs text-mist/60">
+  <p
+    class="seat-name"
+    [attr.data-full-name]="participant().name"
+    [title]="participant().name"
+  >
+    {{ participant().name }}
+  </p>
+  @if (isSelf()) {
+    <p class="you-tag">You</p>
+  }
+  <p class="text-[0.65rem] text-mist/60">
     @if (status() === 'revealed') {
       Revealed
     } @else if (participant().hasVoted) {
@@ -20,4 +38,9 @@
       Yet to vote
     }
   </p>
+  @if (canRemove()) {
+    <button class="mt-1 text-[0.65rem] text-mist/70 underline hover:text-gold" type="button" (click)="remove.emit()">
+      Remove
+    </button>
+  }
 </div>

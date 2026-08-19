@@ -1,4 +1,5 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
+import { parseEstimate } from '../../utils/estimate';
 
 @Component({
   selector: 'app-poker-card',
@@ -10,6 +11,8 @@ export class PokerCardComponent {
   readonly selected = input(false);
   readonly disabled = input(false);
   readonly pick = output<string>();
+
+  readonly estimate = computed(() => parseEstimate(this.value()));
 
   onPick(): void {
     if (!this.disabled()) {

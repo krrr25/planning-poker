@@ -6,7 +6,12 @@
   [disabled]="disabled()"
   (click)="onPick()"
 >
-  <span class="poker-value">{{ value() }}</span>
+  @if (estimate(); as est) {
+    <span class="poker-value">{{ est.hoursLabel }}</span>
+    @if (est.daysLabel) {
+      <span class="poker-days">{{ est.daysLabel }}</span>
+    }
+  }
   @if (selected()) {
     <span class="poker-tick" aria-hidden="true">✓</span>
   }

@@ -5,7 +5,12 @@ const COOKIE = 'pp_admin';
 
 export function signAdmin(admin) {
   return jwt.sign(
-    { sub: String(admin._id), email: admin.email, name: admin.name, role: 'admin' },
+    {
+      sub: String(admin._id),
+      email: admin.email,
+      name: admin.name,
+      role: 'admin',
+    },
     process.env.JWT_SECRET,
     { expiresIn: '12h' }
   );

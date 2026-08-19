@@ -19,7 +19,7 @@ async function loadRoom(code) {
 }
 
 async function removeHostSeats(room) {
-  const voters = room.participants.filter((p) => !p.isHost);
+  const voters = room.participants.filter((p) => !asSeat(p).isHost);
   if (voters.length === room.participants.length) {
     return room;
   }
@@ -29,13 +29,93 @@ async function removeHostSeats(room) {
   return room;
 }
 
+function asSeat(p) {
+  if (!p) {
+    return {};
+  }
+  const doc = p._doc || (typeof p.toObject === 'function' ? p.toObject({ virtuals: false }) : p);
+  return {
+    id: p.get?.('id') || doc.id,
+    name: doc.name,
+    tokenHash: doc.tokenHash || doc.tokenHash,
+    isHost: !!(doc.isHost ?? doc.isHost),
+    vote: doc.vote ?? null,
+    hasVoted: !!doc.hasVoted,
+  };
+}
+
 function findParticipant(room, req) {
-  const token = req.header('x-participant-token');
-  if (!token) {
+  const token = req.header('x-participant-token') || req.header('x-participant-token');
+  if (token) {
+    const tokenHash = hashToken(token);
+    const byToken = room.participants.find((p) => asSeat(p).tokenHash === tokenHash);
+    if (byToken) {
+      return byToken;
+    }
+  }
+
+  const id = String(req.body?.participantId || '').trim();
+  if (id) {
+    const byId = room.participants.find((p) => asSeat(p).id === id);
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const name = String(req.body?.name || '').trim().toLowerCase();
+  if (!name) {
     return null;
   }
-  const tokenHash = hashToken(token);
-  return room.participants.find((p) => p.tokenHash === tokenHash) || null;
+  return room.participants.find((p) => asSeat(p).name?.toLowerCase() === name) || null;
+}
+
+async function removeParticipant(room, participant, extra = {}) {
+  const target = asSeat(participant);
+  const extraId = String(extra.participantId || '').trim();
+  const extraName = String(extra.name || target.name || '').trim();
+  const ids = [...new Set([target.id, extraId].filter(Boolean))];
+  const names = [...new Set([target.name, extraName].filter(Boolean))];
+
+  let changed = false;
+  for (const id of ids) {
+    const result = await Room.collection.updateOne(
+      { _id: room._id },
+      { $pull: { participants: { id } } }
+    );
+    if (result.modifiedCount) {
+      changed = true;
+    }
+  }
+  for (const name of names) {
+    const result = await Room.collection.updateOne(
+      { _id: room._id },
+      { $pull: { participants: { name } } }
+    );
+    if (result.modifiedCount) {
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    const next = room.participants.filter((p) => {
+      const seat = asSeat(p);
+      if (ids.includes(seat.id)) {
+        return false;
+      }
+      if (names.some((n) => n.toLowerCase() === seat.name?.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+    if (next.length !== room.participants.length) {
+      room.participants = next;
+      room.markModified('participants');
+      await room.save();
+      changed = true;
+    }
+  }
+
+  return changed;
 }
 
 roomsRouter.post('/', requireAdmin, async (req, res) => {
@@ -165,6 +245,39 @@ roomsRouter.post('/:code/start', requireAdmin, async (req, res) => {
   });
   await room.save();
   res.json(toPublicRoom(room));
+});
+
+roomsRouter.post('/:code/leave', async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room || isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
+
+  const participant = findParticipant(room, req);
+  const removed = await removeParticipant(room, participant, {
+    participantId: req.body?.participantId,
+    name: req.body?.name,
+  });
+
+  const updated = (await loadRoom(req.params.code)) || room;
+  res.json({ ok: true, removed, room: toPublicRoom(updated) });
+});
+
+roomsRouter.post('/:code/remove', requireAdmin, async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room || isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
+
+  const removed = await removeParticipant(room, null, {
+    participantId: req.body?.participantId,
+    name: req.body?.name,
+  });
+
+  const updated = (await loadRoom(req.params.code)) || room;
+  res.json({ ok: true, removed, room: toPublicRoom(updated) });
 });
 
 roomsRouter.post('/:code/vote', async (req, res) => {
