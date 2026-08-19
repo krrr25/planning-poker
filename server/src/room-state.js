@@ -1,12 +1,13 @@
 export const DECK = ['0', '1', '2', '3', '5', '8', '13', '21', '?', '☕'];
 
 export function isExpired(room) {
-  return new Date(room.expiresAt).getTime() <= Date.now();
+  return room.status === 'ended' || new Date(room.expiresAt).getTime() <= Date.now();
 }
 
 export function toPublicRoom(room, viewer = {}) {
   const revealed = room.status === 'revealed';
-  const votes = room.participants.filter((p) => p.hasVoted).map((p) => p.vote);
+  const voters = room.participants.filter((p) => !p.isHost);
+  const votes = voters.filter((p) => p.hasVoted).map((p) => p.vote);
   const numeric = votes.map(Number).filter((n) => !Number.isNaN(n));
   const average =
     revealed && numeric.length
@@ -21,10 +22,10 @@ export function toPublicRoom(room, viewer = {}) {
     createdByName: room.createdByName,
     deck: DECK,
     remainingMs: Math.max(0, new Date(room.expiresAt).getTime() - Date.now()),
-    votedCount: room.participants.filter((p) => p.hasVoted).length,
-    participantCount: room.participants.length,
+    votedCount: voters.filter((p) => p.hasVoted).length,
+    participantCount: voters.length,
     average,
-    participants: room.participants.map((p) => ({
+    participants: voters.map((p) => ({
       id: p.id,
       name: p.name,
       isHost: p.isHost,

@@ -71,4 +71,10 @@ export class RoomService {
   async extend(code: string): Promise<void> {
     this.room.set(await firstValueFrom(this.http.post<RoomState>(`/api/rooms/${code}/extend`, {})));
   }
+
+  async end(code: string): Promise<void> {
+    await firstValueFrom(this.http.post(`/api/rooms/${code}/end`, {}));
+    this.room.set(null);
+    localStorage.removeItem(this.sessionKey(code));
+  }
 }

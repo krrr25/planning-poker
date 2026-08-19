@@ -10,12 +10,10 @@
 
 @keyframes flip-in {
   from {
-    transform: rotateY(180deg) scale(0.92);
-    opacity: 0.4;
+    transform: rotateY(0deg) scale(0.96);
   }
   to {
-    transform: rotateY(0) scale(1);
-    opacity: 1;
+    transform: rotateY(180deg) scale(1);
   }
 }
 
@@ -52,6 +50,7 @@
   inset: 0;
   border-radius: 0.85rem;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 

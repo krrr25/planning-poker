@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { RoomState } from '../../models/room.model';
 import { AuthService } from '../../services/auth.service';
+import { ConfirmService } from '../../services/confirm.service';
 import { RoomService } from '../../services/room.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { RoomService } from '../../services/room.service';
 export class AdminDashboardComponent {
   readonly auth = inject(AuthService);
   private readonly roomsApi = inject(RoomService);
+  private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
   readonly origin = location.origin;
 
@@ -59,5 +61,20 @@ export class AdminDashboardComponent {
     await navigator.clipboard.writeText(text);
     this.copied.set(true);
     setTimeout(() => this.copied.set(false), 1600);
+  }
+
+  async endRoom(code: string): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'End this room?',
+      message: 'The team will not be able to join or vote. Create a new room for the next session.',
+      confirmLabel: 'End room',
+      cancelLabel: 'Keep room',
+      danger: true,
+    });
+    if (!ok) {
+      return;
+    }
+    await this.roomsApi.end(code);
+    await this.refresh();
   }
 }

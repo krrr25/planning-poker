@@ -1,3 +1,45 @@
-<div class="min-h-screen">
-  <router-outlet />
+<div class="flex min-h-screen flex-col">
+  @if (auth.admin(); as admin) {
+    <header class="sticky top-0 z-30 shrink-0 border-b border-white/10 bg-ink/95 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <a routerLink="/admin/rooms" class="font-display text-lg text-white hover:text-gold">
+          Planning Poker
+        </a>
+        <div class="flex items-center gap-3">
+          <a routerLink="/admin/rooms" class="btn btn-ghost">My rooms</a>
+          <p class="hidden text-sm text-mist sm:block">
+            <span class="text-gold">Facilitator</span>
+            · {{ admin.name }}
+          </p>
+          <button
+            class="icon-btn"
+            type="button"
+            title="Log out"
+            aria-label="Log out"
+            (click)="auth.logout()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.75"
+              stroke="currentColor"
+              class="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+  }
+  <div class="flex-1">
+    <router-outlet />
+  </div>
+  <app-confirm-dialog />
 </div>

@@ -74,3 +74,24 @@ body {
 .btn-ghost:hover {
   @apply bg-white/10;
 }
+
+.icon-btn {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white;
+}
+
+.icon-btn:hover {
+  @apply bg-white/10;
+}
+
+.btn-danger {
+  background: #b42318;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  filter: brightness(1.08);
+}
+
+.name-chip {
+  @apply inline-flex max-w-full items-center truncate rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-sm text-gold;
+}

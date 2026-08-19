@@ -18,10 +18,10 @@ const roomSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
     createdByName: { type: String, required: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     status: {
       type: String,
-      enum: ['waiting', 'voting', 'revealed'],
+      enum: ['waiting', 'voting', 'revealed', 'ended'],
       default: 'waiting',
     },
     participants: { type: [participantSchema], default: [] },

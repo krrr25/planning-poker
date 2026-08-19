@@ -33,6 +33,17 @@ if (!uri) {
   process.exit(1);
 }
 
+const placeholderHost = 'cluster.mongodb.net';
+if (uri.includes(`@${placeholderHost}`) || uri.includes('://USER:PASS@')) {
+  console.error(
+    'MONGODB_URI is still the example placeholder.\n' +
+      'Open server/.env and paste a real MongoDB Atlas connection string\n' +
+      '(Atlas → Database → Connect → Drivers). It looks like:\n' +
+      '  mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/planning-poker-dev'
+  );
+  process.exit(1);
+}
+
 await connectDb(uri);
 await seedFirstAdmin();
 

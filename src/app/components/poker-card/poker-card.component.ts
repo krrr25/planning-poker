@@ -8,8 +8,6 @@ import { Component, input, output } from '@angular/core';
 export class PokerCardComponent {
   readonly value = input.required<string>();
   readonly selected = input(false);
-  readonly revealed = input(false);
-  readonly reset = input(false);
   readonly disabled = input(false);
   readonly pick = output<string>();
 

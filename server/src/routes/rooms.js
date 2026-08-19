@@ -18,6 +18,17 @@ async function loadRoom(code) {
   return Room.findOne({ code: String(code || '').toLowerCase() });
 }
 
+async function removeHostSeats(room) {
+  const voters = room.participants.filter((p) => !p.isHost);
+  if (voters.length === room.participants.length) {
+    return room;
+  }
+  room.participants = voters;
+  room.markModified('participants');
+  await room.save();
+  return room;
+}
+
 function findParticipant(room, req) {
   const token = req.header('x-participant-token');
   if (!token) {
@@ -54,6 +65,7 @@ roomsRouter.post('/', requireAdmin, async (req, res) => {
 roomsRouter.get('/', requireAdmin, async (req, res) => {
   const rooms = await Room.find({
     createdBy: req.admin.sub,
+    status: { $ne: 'ended' },
     expiresAt: { $gt: new Date() },
   }).sort({ createdAt: -1 });
 
@@ -67,9 +79,11 @@ roomsRouter.get('/:code', async (req, res) => {
     return;
   }
   if (isExpired(room)) {
-    res.status(410).json({ message: 'This room has expired. Ask the facilitator for a new link.' });
+    res.status(410).json({ message: 'This room has ended. Ask the facilitator for a new link.' });
     return;
   }
+
+  await removeHostSeats(room);
 
   const participant = findParticipant(room, req);
   res.json({
@@ -90,13 +104,19 @@ roomsRouter.post('/:code/join', async (req, res) => {
   }
 
   const admin = readAdmin(req);
-  let name = String(req.body?.name || '').trim();
-  let isHost = false;
-
   if (admin) {
-    name = admin.name;
-    isHost = true;
+    res.status(200).json({
+      token: null,
+      participantId: null,
+      name: admin.name,
+      isHost: true,
+      room: toPublicRoom(room),
+    });
+    return;
   }
+
+  const name = String(req.body?.name || '').trim();
+  const isHost = false;
 
   if (name.length < 2 || name.length > 32) {
     res.status(400).json({ message: 'Enter a name between 2 and 32 characters' });
@@ -104,25 +124,12 @@ roomsRouter.post('/:code/join', async (req, res) => {
   }
 
   const existing = room.participants.find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (existing && !(admin && existing.isHost)) {
+  if (existing) {
     res.status(409).json({ message: 'That name is already in this room' });
     return;
   }
 
   const token = randomToken();
-  if (existing && admin && existing.isHost) {
-    existing.tokenHash = hashToken(token);
-    await room.save();
-    res.status(200).json({
-      token,
-      participantId: existing.id,
-      name: existing.name,
-      isHost: true,
-      room: toPublicRoom(room, { participantId: existing.id }),
-    });
-    return;
-  }
-
   const person = {
     id: participantId(),
     name,
@@ -150,6 +157,7 @@ roomsRouter.post('/:code/start', requireAdmin, async (req, res) => {
     return;
   }
 
+  await removeHostSeats(room);
   room.status = 'voting';
   room.participants.forEach((p) => {
     p.vote = null;
@@ -226,8 +234,25 @@ roomsRouter.post('/:code/extend', requireAdmin, async (req, res) => {
     res.status(404).json({ message: 'Room not found' });
     return;
   }
+  if (isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
 
   room.expiresAt = new Date(Math.max(room.expiresAt.getTime(), Date.now()) + 60 * 60 * 1000);
   await room.save();
   res.json(toPublicRoom(room));
+});
+
+roomsRouter.post('/:code/end', requireAdmin, async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room) {
+    res.status(404).json({ message: 'Room not found' });
+    return;
+  }
+
+  room.status = 'ended';
+  room.expiresAt = new Date();
+  await room.save();
+  res.json({ ok: true, code: room.code });
 });

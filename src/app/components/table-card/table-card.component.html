@@ -10,15 +10,10 @@
       <div class="poker-face">{{ participant().vote || '–' }}</div>
     </div>
   </div>
-  <p class="mt-2 text-sm font-medium">
-    {{ participant().name }}
-    @if (participant().isHost) {
-      <span class="text-gold"> · host</span>
-    }
-  </p>
+  <p class="mt-2 text-sm font-medium">{{ participant().name }}</p>
   <p class="text-xs text-mist/60">
     @if (status() === 'revealed') {
-      {{ participant().vote ?? '—' }}
+      Revealed
     } @else if (participant().hasVoted) {
       Voted
     } @else {

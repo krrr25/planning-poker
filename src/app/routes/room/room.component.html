@@ -1,12 +1,15 @@
-<main class="mx-auto min-h-screen max-w-6xl px-4 py-6">
+<main class="mx-auto max-w-6xl px-4 py-6">
   @if (expired()) {
-    <section class="mx-auto mt-24 max-w-lg rounded-3xl border border-white/10 bg-panel p-8 text-center">
-      <h1 class="font-display text-3xl">Room expired</h1>
-      <p class="mt-3 text-mist/80">Ask the facilitator for a new link.</p>
+    <section class="mx-auto mt-16 max-w-lg rounded-3xl border border-white/10 bg-panel p-8 text-center">
+      <h1 class="font-display text-3xl">Room ended</h1>
+      <p class="mt-3 text-mist/80">This session is closed. Ask the facilitator for a new link.</p>
       <a routerLink="/" class="btn btn-gold mt-6">Go home</a>
+      @if (isAdmin()) {
+        <a routerLink="/admin/rooms" class="btn btn-ghost mt-6 ml-2">My rooms</a>
+      }
     </section>
   } @else if (room(); as current) {
-    <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <header class="mb-6">
       <div>
         <p class="text-xs uppercase tracking-[0.18em] text-gold">Planning room</p>
         <h1 class="font-display text-3xl md:text-4xl">{{ current.name }}</h1>
@@ -14,7 +17,7 @@
           Hosted by {{ current.createdByName }} · expires {{ current.expiresAt | date: 'shortTime' }}
         </p>
       </div>
-      <div class="flex flex-wrap gap-2">
+      <div class="mt-4 flex flex-wrap gap-2">
         <button class="btn btn-ghost" type="button" (click)="copyLink()">
           {{ copied() ? 'Copied' : 'Copy link' }}
         </button>
@@ -29,6 +32,7 @@
           @if (current.status === 'revealed') {
             <button class="btn btn-gold" type="button" (click)="reset()">Next / reset</button>
           }
+          <button class="btn btn-ghost" type="button" (click)="endRoom()">End room</button>
         }
       </div>
     </header>
@@ -40,11 +44,23 @@
           Cards stay locked until then.
         }
         @case ('voting') {
-          <span class="text-gold">{{ current.votedCount }}/{{ current.participantCount }} voted.</span>
-          @if (pending().length) {
-            Still waiting on
-            <strong>{{ pendingNames() }}</strong>
-          }
+          <div>
+            <p>
+              <span class="text-gold">{{ current.votedCount }}/{{ current.participantCount }} voted.</span>
+              @if (isAdmin() && pending().length) {
+                {{ pending().length }} {{ pending().length === 1 ? 'person has' : 'people have' }} not voted:
+              }
+            </p>
+            @if (isAdmin() && pending().length) {
+              <div class="mt-3 max-h-36 overflow-y-auto">
+                <div class="flex flex-wrap gap-2">
+                  @for (person of pending(); track person.id) {
+                    <span class="name-chip">{{ person.name }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
         }
         @case ('revealed') {
           Votes are in
@@ -67,25 +83,31 @@
     </section>
 
     <section class="mt-8">
-      <p class="mb-3 text-center text-sm text-mist/70">
-        @if (current.status !== 'voting') {
-          Cards are disabled until voting starts
-        } @else {
-          Pick your estimate — you can change it until reveal
-        }
-      </p>
-      <div class="flex flex-wrap justify-center gap-3">
-        @for (card of current.deck; track card) {
-          <app-poker-card
-            [value]="card"
-            [selected]="myVote() === card && current.status === 'voting'"
-            [revealed]="current.status === 'revealed' && myVote() === card"
-            [reset]="resetting() && current.status === 'waiting'"
-            [disabled]="current.status !== 'voting' || !joined()"
-            (pick)="vote($event)"
-          />
-        }
-      </div>
+      @if (isAdmin()) {
+        <p class="text-center text-sm text-mist/70">
+          You're running the sprint. Only the team votes.
+        </p>
+      } @else {
+        <p class="mb-3 text-center text-sm text-mist/70">
+          @if (current.status !== 'voting') {
+            Cards stay locked until the facilitator starts voting
+          } @else if (myVote()) {
+            Your pick: <strong>{{ myVote() }}</strong> — you can change it until reveal
+          } @else {
+            Pick your estimate — values are on the cards
+          }
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+          @for (card of current.deck; track card) {
+            <app-poker-card
+              [value]="card"
+              [selected]="myVote() === card && current.status === 'voting'"
+              [disabled]="current.status !== 'voting' || !joined()"
+              (pick)="vote($event)"
+            />
+          }
+        </div>
+      }
     </section>
   }
 
