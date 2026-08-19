@@ -74,10 +74,11 @@ The first admin is **seeded once** from `ADMIN_EMAIL` / `ADMIN_PASSWORD` when th
 - **+1 hour** extends expiry
 - Duplicate display names in the same room are blocked
 - Refresh: voter token stays in `localStorage`; admin cookie stays; host can rejoin without “name taken”
+- Voter can **Leave table**; facilitator can **Remove** a leftover seat
 
 ### Deck
 
-`0, 1, 2, 3, 5, 8, 13, 21, ?, ☕`
+Hours (7h = 1 working day): `7, 14, 21, 28, 35, 42, 49`
 
 ### UX shipped
 
@@ -105,6 +106,8 @@ The first admin is **seeded once** from `ADMIN_EMAIL` / `ADMIN_PASSWORD` when th
 | POST | `/rooms/:code/reveal` | Admin |
 | POST | `/rooms/:code/reset` | Admin |
 | POST | `/rooms/:code/extend` | Admin |
+| POST | `/rooms/:code/leave` | Joined participant |
+| POST | `/rooms/:code/remove` | Admin — remove a leftover seat |
 
 ### What v1 does **not** include
 
