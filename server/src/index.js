@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { connectDb } from './db.js';
 import { seedFirstAdmin } from './seed.js';
 import { authRouter } from './routes/auth.js';
+import { azureRouter } from './routes/azure.js';
 import { roomsRouter } from './routes/rooms.js';
 
 const port = Number(process.env.PORT) || 3000;
@@ -24,6 +25,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/azure', azureRouter);
 app.use('/api/rooms', roomsRouter);
 
 app.use((err, _req, res, _next) => {

@@ -30,8 +30,13 @@ export class RoomService {
     return firstValueFrom(this.http.get<RoomState[]>('/api/rooms'));
   }
 
-  async create(name: string): Promise<RoomState> {
-    return firstValueFrom(this.http.post<RoomState>('/api/rooms', { name }));
+  async create(name: string, azureProject?: string | null): Promise<RoomState> {
+    return firstValueFrom(
+      this.http.post<RoomState>('/api/rooms', {
+        name,
+        azureProject: azureProject || undefined,
+      })
+    );
   }
 
   async get(code: string): Promise<RoomState> {
@@ -99,6 +104,22 @@ export class RoomService {
 
   async reveal(code: string): Promise<void> {
     this.room.set(await firstValueFrom(this.http.post<RoomState>(`/api/rooms/${code}/reveal`, {})));
+  }
+
+  async loadStory(code: string, workItemId: string): Promise<void> {
+    this.room.set(
+      await firstValueFrom(
+        this.http.post<RoomState>(`/api/rooms/${code}/story`, { workItemId })
+      )
+    );
+  }
+
+  async revote(code: string): Promise<void> {
+    this.room.set(await firstValueFrom(this.http.post<RoomState>(`/api/rooms/${code}/revote`, {})));
+  }
+
+  async nextStory(code: string): Promise<void> {
+    this.room.set(await firstValueFrom(this.http.post<RoomState>(`/api/rooms/${code}/next`, {})));
   }
 
   async reset(code: string): Promise<void> {

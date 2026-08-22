@@ -2,7 +2,7 @@
 
 Internal sprint estimation tool. Facilitators (BA / PO / SM) create a room; the team joins with a link and votes **in hours** (7 hours = 1 working day).
 
-Full write-up (what shipped, local test checklist, later features): [docs/v1-implementation-and-plan.md](docs/v1-implementation-and-plan.md).
+Full write-up (what shipped, local test checklist, pending features): [docs/v1-implementation-and-plan.md](docs/v1-implementation-and-plan.md).
 
 ## Local setup
 
@@ -15,6 +15,8 @@ copy server\.env.example server\.env
 ```
 
 In `server\.env` set `MONGODB_URI`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME`.
+
+For Azure DevOps work items, also set `ADO_ORG`, `ADO_PAT`, and `ADO_PROJECTS` (comma-separated project names).
 
 2. Install and run (two terminals):
 
@@ -31,7 +33,7 @@ npm start
 ```
 
 3. Open `http://localhost:4200/admin` and sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`.
-4. Create a room, copy the link, open it in a private window as a voter.
+4. Create a room (choose an Azure DevOps project when configured), copy the link, open it in a private window as a voter.
 
 The first API start creates the admin **only if** the `admins` collection is empty. Extra admins:
 
@@ -44,10 +46,30 @@ node scripts/add-admin.js --email ba@company.com --password "StrongPass!" --name
 
 - `/` — join with a room code and display name
 - `/admin` — facilitator login, create rooms, list live rooms
-- `/room/:code` — vote board
+- `/room/:code` — vote board; optional Azure DevOps work item on screen
 - Rooms expire after **3 hours**
 - Cards stay disabled until the facilitator starts voting
 - Deck is **hours**, not story points: `7, 14, 21, 28, 35, 42, 49` (7h = 1 day)
+- **Revote** — clear votes, keep the same work item
+- **Next story** — clear votes and work item; load another ID (any order)
 - Voters can **Leave table**; the facilitator can **Remove** a leftover seat
-- No story title in v1 — call out the ticket in the meeting, then vote
 
+## Azure DevOps (optional)
+
+When `ADO_ORG`, `ADO_PAT`, and `ADO_PROJECTS` are set:
+
+- Pick a project when creating a room; use **Reset** to clear the form
+- In the room: **Work item:** enter ID → **Load** (optional; failures do not block voting)
+- Everyone sees **{type} #{id}: {title}** as a clickable link (e.g. `User Story #12345: …`)
+- **Next story** clears the work item so the facilitator can load the next ticket
+
+On Cloud Run, map secrets to env vars with the same names, e.g. `ADO_PAT=ADO_PAT:latest`.
+
+## Pending (not built yet)
+
+See [docs/v1-implementation-and-plan.md §4](docs/v1-implementation-and-plan.md#4-pending--later) for the full list. Highlights:
+
+- Round history per room
+- Coffee / abstain vote handling in averages
+- Per-user away / break status
+- Sprint backlog picker, mobile polish, admin self-service

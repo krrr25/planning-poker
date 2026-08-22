@@ -26,6 +26,57 @@
         </div>
       }
     </header>
+
+    @if (currentStory(); as story) {
+      <section class="mb-3 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3">
+        <p class="text-xs uppercase tracking-[0.18em] text-gold">Current work item</p>
+        @if (story.url) {
+          <a
+            class="mt-1 inline-block font-display text-xl text-gold underline decoration-gold/40 underline-offset-4 hover:decoration-gold md:text-2xl"
+            [href]="story.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ workItemLabel() }}
+          </a>
+        } @else {
+          <p class="mt-1 font-display text-xl md:text-2xl">
+            {{ workItemLabel() }}
+          </p>
+        }
+      </section>
+    }
+
+    @if (canLoadStory()) {
+      <form class="work-item-load mb-3" (ngSubmit)="loadStory()">
+        <div class="work-item-load-row">
+          <label class="work-item-load-label" for="workItemId">Work item:</label>
+          <input
+            id="workItemId"
+            class="field work-item-load-input"
+            name="workItemId"
+            [(ngModel)]="workItemId"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="ID"
+          />
+          <button
+            class="btn btn-gold work-item-load-btn"
+            type="submit"
+            [disabled]="loadingStory() || !workItemId.trim()"
+          >
+            {{ loadingStory() ? 'Loading…' : 'Load' }}
+          </button>
+          <p class="work-item-load-hint">
+            <span class="work-item-load-hint-badge">Optional — Fetch Work Item</span>
+          </p>
+        </div>
+        @if (storyError()) {
+          <p class="work-item-load-error">{{ storyError() }}</p>
+        }
+      </form>
+    }
+
     <div class="mb-3 flex flex-wrap gap-2">
       @if (isAdmin()) {
         <button class="btn btn-ghost" type="button" (click)="copyLink()">
@@ -39,7 +90,8 @@
           <button class="btn btn-gold" type="button" (click)="reveal()">Reveal</button>
         }
         @if (current.status === 'revealed') {
-          <button class="btn btn-gold" type="button" (click)="reset()">Next / reset</button>
+          <button class="btn btn-ghost" type="button" (click)="revote()">Revote</button>
+          <button class="btn btn-gold" type="button" (click)="nextStory()">Next story</button>
         }
         <button class="btn btn-ghost" type="button" (click)="endRoom()">End room</button>
       }
@@ -135,6 +187,9 @@
       <form class="rise-in w-full max-w-md rounded-3xl border border-white/10 bg-ink p-7" (ngSubmit)="join()">
         <p class="text-xs uppercase tracking-[0.18em] text-gold">Join room</p>
         <h2 class="font-display mt-2 text-3xl">{{ room()?.name || 'Planning Poker' }}</h2>
+        @if (currentStory()) {
+          <p class="mt-2 text-sm text-gold">{{ workItemLabel() }}</p>
+        }
         <p class="mt-2 text-sm text-mist/70">
           Enter the name your team will see on the board. Votes are in hours — estimate each work item in hours (7h = 1 day).
         </p>

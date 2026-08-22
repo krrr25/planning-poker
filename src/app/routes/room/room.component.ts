@@ -8,6 +8,8 @@ import { AuthService } from '../../services/auth.service';
 import { ConfirmService } from '../../services/confirm.service';
 import { RoomService } from '../../services/room.service';
 import { formatEstimate } from '../../utils/estimate';
+import { readApiError } from '../../utils/api-error';
+import { formatWorkItemLabel } from '../../utils/work-item';
 
 @Component({
   selector: 'app-room',
@@ -29,6 +31,9 @@ export class RoomComponent implements OnDestroy {
   readonly copied = signal(false);
   readonly joinError = signal('');
   readonly joined = signal(false);
+  readonly storyError = signal('');
+  readonly loadingStory = signal(false);
+  workItemId = '';
   readonly isAdmin = computed(() => this.auth.admin()?.role === 'admin');
   readonly showJoin = computed(
     () => !!this.room() && !this.joined() && !this.expired() && !this.isAdmin()
@@ -48,6 +53,18 @@ export class RoomComponent implements OnDestroy {
   readonly myVoteLabel = computed(() => formatEstimate(this.myVote()));
   readonly averageLabel = computed(() => formatEstimate(this.room()?.average));
   readonly pending = computed(() => this.room()?.participants.filter((p) => !p.hasVoted) ?? []);
+  readonly currentStory = computed(() => this.room()?.currentStory ?? null);
+  readonly workItemLabel = computed(() => {
+    const story = this.currentStory();
+    return story ? formatWorkItemLabel(story) : '';
+  });
+  readonly canLoadStory = computed(
+    () =>
+      this.isAdmin() &&
+      this.room()?.status === 'waiting' &&
+      !!this.room()?.azureProject &&
+      !this.currentStory()
+  );
   readonly seats = computed(() =>
     [...(this.room()?.participants ?? [])].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
@@ -118,6 +135,57 @@ export class RoomComponent implements OnDestroy {
     await this.rooms.start(this.code);
   }
 
+  async loadStory(): Promise<void> {
+    this.storyError.set('');
+    const id = this.workItemId.trim();
+    if (!/^\d+$/.test(id)) {
+      this.storyError.set('Enter a numeric work item ID.');
+      return;
+    }
+
+    this.loadingStory.set(true);
+    try {
+      await this.rooms.loadStory(this.code, id);
+      this.workItemId = '';
+      this.storyError.set('');
+    } catch (err: unknown) {
+      this.storyError.set(readApiError(err, 'Could not load that work item.'));
+    } finally {
+      this.loadingStory.set(false);
+    }
+  }
+
+  async revote(): Promise<void> {
+    const story = this.currentStory();
+    const ok = await this.confirm.ask({
+      title: 'Revote on this story?',
+      message: story
+        ? `Clear all votes and vote again on ${formatWorkItemLabel(story)}.`
+        : 'Clear all votes and vote again on the current story.',
+      confirmLabel: 'Revote',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) {
+      return;
+    }
+    await this.rooms.revote(this.code);
+  }
+
+  async nextStory(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Move to the next story?',
+      message: 'Votes will be cleared and the current work item will be removed. You can load another ID or start without one.',
+      confirmLabel: 'Next story',
+      cancelLabel: 'Stay',
+    });
+    if (!ok) {
+      return;
+    }
+    await this.rooms.nextStory(this.code);
+    this.workItemId = '';
+    this.storyError.set('');
+  }
+
   async reveal(): Promise<void> {
     const pending = this.pending();
     if (pending.length) {
@@ -136,10 +204,6 @@ export class RoomComponent implements OnDestroy {
       }
     }
     await this.rooms.reveal(this.code);
-  }
-
-  async reset(): Promise<void> {
-    await this.rooms.reset(this.code);
   }
 
   async copyLink(): Promise<void> {

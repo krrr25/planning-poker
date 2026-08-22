@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { customAlphabet } from 'nanoid';
 import { Room } from '../models/Room.js';
 import { hashToken, randomToken, readAdmin, requireAdmin } from '../auth.js';
+import { fetchWorkItem, listProjects } from '../services/azure-devops.js';
 import { DECK, isExpired, toPublicRoom } from '../room-state.js';
 
 const codeId = customAlphabet('abcdefghjkmnpqrstuvwxyz23456789', 6);
@@ -12,6 +13,28 @@ export const roomsRouter = Router();
 function ttlHours() {
   const n = Number(process.env.ROOM_TTL_HOURS);
   return Number.isFinite(n) && n > 0 ? n : 3;
+}
+
+function clearVotes(room) {
+  room.participants.forEach((p) => {
+    p.vote = null;
+    p.hasVoted = false;
+  });
+}
+
+function resolveAzureProject(bodyProject) {
+  const projects = listProjects();
+  const project = String(bodyProject || '').trim();
+  if (projects.length) {
+    if (!project) {
+      return { error: 'Choose an Azure DevOps project for this room' };
+    }
+    if (!projects.includes(project)) {
+      return { error: 'That project is not available for this deployment' };
+    }
+    return { project };
+  }
+  return { project: project || null };
 }
 
 async function loadRoom(code) {
@@ -125,10 +148,17 @@ roomsRouter.post('/', requireAdmin, async (req, res) => {
     return;
   }
 
+  const { project: azureProject, error: projectError } = resolveAzureProject(req.body?.azureProject);
+  if (projectError) {
+    res.status(400).json({ message: projectError });
+    return;
+  }
+
   const hours = ttlHours();
   const room = await Room.create({
     code: codeId(),
     name,
+    azureProject,
     createdBy: req.admin.sub,
     createdByName: req.admin.name,
     expiresAt: new Date(Date.now() + hours * 60 * 60 * 1000),
@@ -239,10 +269,7 @@ roomsRouter.post('/:code/start', requireAdmin, async (req, res) => {
 
   await removeHostSeats(room);
   room.status = 'voting';
-  room.participants.forEach((p) => {
-    p.vote = null;
-    p.hasVoted = false;
-  });
+  clearVotes(room);
   await room.save();
   res.json(toPublicRoom(room));
 });
@@ -325,6 +352,59 @@ roomsRouter.post('/:code/reveal', requireAdmin, async (req, res) => {
   res.json(toPublicRoom(room));
 });
 
+roomsRouter.post('/:code/story', requireAdmin, async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room || isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
+  if (room.status !== 'waiting') {
+    res.status(400).json({ message: 'Load a work item only while waiting for the next vote' });
+    return;
+  }
+  if (!room.azureProject) {
+    res.status(400).json({ message: 'This room has no Azure DevOps project' });
+    return;
+  }
+
+  try {
+    const story = await fetchWorkItem(room.azureProject, req.body?.workItemId);
+    room.currentStory = story;
+    await room.save();
+    res.json(toPublicRoom(room));
+  } catch (err) {
+    const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 502;
+    res.status(status).json({ message: err.message || 'Could not load work item' });
+  }
+});
+
+roomsRouter.post('/:code/revote', requireAdmin, async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room || isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
+
+  room.status = 'waiting';
+  clearVotes(room);
+  await room.save();
+  res.json(toPublicRoom(room));
+});
+
+roomsRouter.post('/:code/next', requireAdmin, async (req, res) => {
+  const room = await loadRoom(req.params.code);
+  if (!room || isExpired(room)) {
+    res.status(410).json({ message: 'Room is not available' });
+    return;
+  }
+
+  room.status = 'waiting';
+  room.currentStory = null;
+  clearVotes(room);
+  await room.save();
+  res.json(toPublicRoom(room));
+});
+
 roomsRouter.post('/:code/reset', requireAdmin, async (req, res) => {
   const room = await loadRoom(req.params.code);
   if (!room || isExpired(room)) {
@@ -333,10 +413,7 @@ roomsRouter.post('/:code/reset', requireAdmin, async (req, res) => {
   }
 
   room.status = 'waiting';
-  room.participants.forEach((p) => {
-    p.vote = null;
-    p.hasVoted = false;
-  });
+  clearVotes(room);
   await room.save();
   res.json(toPublicRoom(room));
 });

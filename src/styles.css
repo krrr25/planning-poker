@@ -49,13 +49,34 @@ body {
   @apply w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition;
 }
 
+select.field {
+  color-scheme: dark;
+  appearance: none;
+  cursor: pointer;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23c7d0de' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+select.field option {
+  background-color: #121a26;
+  color: #e8eef7;
+}
+
+select.field option:checked {
+  background-color: #243044;
+  color: #f5c14a;
+}
+
 .field:focus {
   border-color: #f5c14a;
   box-shadow: 0 0 0 3px rgba(245, 193, 74, 0.18);
 }
 
 .btn {
-  @apply inline-flex cursor-pointer items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition;
+  @apply inline-flex cursor-pointer items-center justify-center rounded-xl border px-3 py-1 text-sm font-semibold transition;
+  min-height: 1.75rem;
 }
 
 .btn:disabled {
@@ -70,35 +91,43 @@ button:not(:disabled) {
 .btn-gold {
   background: #f5c14a;
   color: #3b2a08;
+  border-color: #c99a2e;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
 }
 
-.btn-gold:hover {
+.btn-gold:hover:not(:disabled) {
   filter: brightness(1.05);
+  border-color: #b88724;
 }
 
 .btn-ghost {
-  @apply border border-white/15 bg-white/5 text-white;
+  @apply border-white/20 bg-white/5 text-white;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
-.btn-ghost:hover {
-  @apply bg-white/10;
+.btn-ghost:hover:not(:disabled) {
+  @apply border-white/30 bg-white/10;
 }
 
 .icon-btn {
-  @apply inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white;
+  @apply inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl border border-white/20 bg-white/5 text-white;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
-.icon-btn:hover {
-  @apply bg-white/10;
+.icon-btn:hover:not(:disabled) {
+  @apply border-white/30 bg-white/10;
 }
 
 .btn-danger {
   background: #b42318;
   color: #fff;
+  border-color: #8f1c13;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   filter: brightness(1.08);
+  border-color: #7a1810;
 }
 
 .name-chip {

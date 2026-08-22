@@ -9,27 +9,48 @@
   <section class="rise-in mb-6 rounded-3xl border border-white/10 bg-panel p-5">
     <h2 class="font-display text-2xl">Create a room</h2>
     <p class="mt-1 text-sm text-mist/70">Name it for the pod. The link lasts 3 hours. Voting cards are hour estimates, not story points.</p>
-    <form class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center" (ngSubmit)="create()">
-      <input
-        class="field flex-1"
-        name="name"
-        [(ngModel)]="name"
-        placeholder="Sprint 24 - Product team"
-        required
-      />
-      <button class="btn btn-gold shrink-0 whitespace-nowrap" type="submit" [disabled]="creating()">
-        Create room
-      </button>
+    <form class="mt-4 flex flex-col gap-3" (ngSubmit)="create()">
+      <div class="create-room-fields">
+        <input
+          class="field create-room-field"
+          name="name"
+          [(ngModel)]="name"
+          placeholder="Sprint 24 - Product team"
+          required
+        />
+        @if (azureProjects().length) {
+          <select
+            class="field create-room-field"
+            name="azureProject"
+            [(ngModel)]="azureProject"
+            [required]="azureRequired()"
+          >
+            <option value="" disabled hidden>Azure DevOps project</option>
+            @for (project of azureProjects(); track project) {
+              <option [value]="project">{{ project }}</option>
+            }
+          </select>
+        }
+        <button class="btn btn-gold shrink-0 whitespace-nowrap" type="submit" [disabled]="creating()">
+          Create room
+        </button>
+        <button class="btn btn-ghost shrink-0 whitespace-nowrap" type="button" (click)="resetForm()">
+          Reset
+        </button>
+      </div>
+      @if (createError()) {
+        <p class="text-sm text-red-300">{{ createError() }}</p>
+      }
     </form>
     @if (created()) {
       <div class="mt-4 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2">
         <p class="text-sm font-semibold text-gold">Share this link with the team</p>
         <div class="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input class="field min-w-0 flex-1 !px-3 !py-2" [value]="createdUrl()" readonly />
-          <button class="btn btn-ghost shrink-0 whitespace-nowrap !px-3 !py-2" type="button" (click)="copy(createdUrl())">
+          <input class="field min-w-0 flex-1 !px-3 !py-1.5" [value]="createdUrl()" readonly />
+          <button class="btn btn-ghost shrink-0 whitespace-nowrap" type="button" (click)="copy(createdUrl())">
             {{ copied() ? 'Copied' : 'Copy link' }}
           </button>
-          <a class="btn btn-gold shrink-0 whitespace-nowrap !px-3 !py-2" [routerLink]="['/room', created()!.code]">
+          <a class="btn btn-gold shrink-0 whitespace-nowrap" [routerLink]="['/room', created()!.code]">
             Open room
           </a>
         </div>
@@ -49,6 +70,9 @@
           <p class="mt-1 text-sm text-mist/70">
             Code {{ room.code }} · expires {{ room.expiresAt | date: 'short' }}
           </p>
+          @if (room.azureProject) {
+            <p class="mt-1 text-sm text-mist/70">Project {{ room.azureProject }}</p>
+          }
           <p class="mt-1 text-sm text-mist">{{ room.participantCount }} in room · {{ room.status }}</p>
           <div class="mt-4 flex flex-wrap gap-2">
             <a class="btn btn-gold shrink-0 whitespace-nowrap" [routerLink]="['/room', room.code]">Start / open</a>

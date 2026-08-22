@@ -25,9 +25,22 @@ export function toPublicRoom(room, viewer = {}) {
       ? Math.round((numeric.reduce((a, b) => a + b, 0) / numeric.length) * 10) / 10
       : null;
 
+  const story = room.currentStory;
+  const currentStory =
+    story?.workItemId && story?.title
+      ? {
+          workItemId: story.workItemId,
+          workItemType: story.workItemType || 'Work Item',
+          title: story.title,
+          url: story.url || null,
+        }
+      : null;
+
   return {
     code: room.code,
     name: room.name,
+    azureProject: room.azureProject || null,
+    currentStory,
     status: room.status,
     expiresAt: room.expiresAt,
     createdByName: room.createdByName,

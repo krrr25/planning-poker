@@ -12,10 +12,22 @@ const participantSchema = new mongoose.Schema(
   { _id: false, id: false }
 );
 
+const currentStorySchema = new mongoose.Schema(
+  {
+    workItemId: { type: String, required: true },
+    workItemType: { type: String, required: true },
+    title: { type: String, required: true },
+    url: { type: String, required: true },
+  },
+  { _id: false, id: false }
+);
+
 const roomSchema = new mongoose.Schema(
   {
     code: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true, trim: true },
+    azureProject: { type: String, default: null, trim: true },
+    currentStory: { type: currentStorySchema, default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
     createdByName: { type: String, required: true },
     expiresAt: { type: Date, required: true },
